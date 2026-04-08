@@ -156,9 +156,23 @@
         if (useFirebase) {
             try {
                 const cred = await auth.signInWithEmailAndPassword(email, password);
-                const u = usuarios.find(x => x.email === email);
-                if (u) { setSession(u); return true; }
-                setSession({ id: cred.user.uid, nombre: cred.user.email, email, rol: 'cliente', talleresAsignados: [] });
+                // Always fetch from Firestore to get latest role
+                const snap = await db.collection('usuarios').where('email', '==', email).limit(1).get();
+                if (!snap.empty) {
+                    const u = { id: snap.docs[0].id, ...snap.docs[0].data() };
+                    setSession(u);
+                    // Update local array too
+                    const idx = usuarios.findIndex(x => x.email === email);
+                    if (idx >= 0) usuarios[idx] = u; else usuarios.push(u);
+                    saveLocal(KEYS.usuarios, usuarios);
+                    return true;
+                }
+                // User exists in Auth but not in Firestore yet — create with cliente role
+                const newU = { id: cred.user.uid, nombre: cred.user.displayName || email.split('@')[0], email, rol: 'cliente', talleresAsignados: [], creadoEn: new Date().toISOString() };
+                await db.collection('usuarios').doc(newU.id).set(newU);
+                usuarios.push(newU);
+                saveLocal(KEYS.usuarios, usuarios);
+                setSession(newU);
                 return true;
             } catch (e) { showToast('Error: ' + e.message); return false; }
         }
@@ -204,11 +218,9 @@
         const t2 = { id: uid(), nombre: 'Taller MTY Sur', direccion: 'Av. Revolución 1200, Monterrey', telefono: '81 2345 6789', capacidad: 6 };
         const t3 = { id: uid(), nombre: 'Taller GDL', direccion: 'Av. Vallarta 3000, Guadalajara', telefono: '33 1234 5678', capacidad: 10 };
 
-        const u1 = { id: uid(), nombre: 'Carlos Admin', email: 'admin@mecanicatek.com', rol: 'admin', password: '123456', talleresAsignados: [t1.id, t2.id, t3.id], creadoEn: new Date().toISOString() };
-        const u2 = { id: uid(), nombre: 'Roberto Encargado', email: 'roberto@mecanicatek.com', rol: 'taller', password: '123456', talleresAsignados: [t1.id, t2.id], creadoEn: new Date().toISOString() };
-        const u3 = { id: uid(), nombre: 'María García', email: 'maria@cliente.com', rol: 'cliente', password: '123456', talleresAsignados: [], creadoEn: new Date().toISOString() };
+        const u1 = { id: uid(), nombre: 'Carlos Hernández', email: 'carlosu.hernandez@mecanicatek.com', rol: 'admin', password: '', talleresAsignados: [t1.id, t2.id, t3.id], creadoEn: new Date().toISOString() };
 
-        talleres = [t1, t2, t3]; usuarios = [u1, u2, u3];
+        talleres = [t1, t2, t3]; usuarios = [u1];
 
         const now = new Date();
         const y = now.getFullYear(), m = now.getMonth();
@@ -826,8 +838,7 @@
         $('#btnShowRegister').addEventListener('click', () => { $('#loginForm').classList.add('hidden'); $('#registerForm').classList.remove('hidden'); });
         $('#btnShowLogin').addEventListener('click', () => { $('#registerForm').classList.add('hidden'); $('#loginForm').classList.remove('hidden'); });
 
-        // Demo buttons
-        $$('.btn-demo').forEach(btn => btn.addEventListener('click', () => demoLogin(btn.dataset.role)));
+        // Demo buttons (removed)
 
         // Logout
         $('#btnLogout').addEventListener('click', logout);
