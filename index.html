@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TallerCitas — Sistema de Citas para Talleres Mecánicos</title>
+    <meta name="description" content="Sistema de agendamiento y seguimiento de citas para talleres mecánicos automotrices.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- ====== FIREBASE BANNER ====== -->
+    <div class="firebase-banner" id="firebaseBanner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Modo local — Los datos se guardan en tu navegador. Configura <strong>firebase-config.js</strong> para sincronización en la nube.</span>
+        <button onclick="this.parentElement.style.display='none'" class="banner-close">&times;</button>
+    </div>
+
+    <!-- ====== LOGIN SCREEN ====== -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-bg-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="login-card">
+            <div class="login-logo">
+                <div class="login-logo-icon">
+                    <svg viewBox="0 0 48 48" fill="none">
+                        <rect x="2" y="2" width="44" height="44" rx="10" stroke="currentColor" stroke-width="2.5"/>
+                        <path d="M14 34V20L24 12L34 20V34" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="24" cy="26" r="4" stroke="currentColor" stroke-width="2"/>
+                        <path d="M20 34V30H28V34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <h1>TallerCitas</h1>
+                <p>Sistema de Citas para Talleres Mecánicos</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="loginEmail">Correo electrónico</label>
+                    <input type="email" id="loginEmail" placeholder="tu@correo.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="btnLogin">
+                    <span>Iniciar Sesión</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+                <div class="login-divider"><span>o</span></div>
+                <button type="button" class="btn btn-ghost btn-full" id="btnShowRegister">Crear cuenta nueva</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="login-form hidden">
+                <div class="form-group">
+                    <label for="regName">Nombre completo</label>
+                    <input type="text" id="regName" placeholder="Tu nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Correo electrónico</label>
+                    <input type="email" id="regEmail" placeholder="tu@correo.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Contraseña</label>
+                    <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="btnRegister">
+                    <span>Crear Cuenta</span>
+                </button>
+                <button type="button" class="btn btn-ghost btn-full" id="btnShowLogin">Ya tengo cuenta</button>
+            </form>
+
+            <!-- Demo Access -->
+            <div class="demo-access">
+                <p>Acceso rápido de demostración:</p>
+                <div class="demo-buttons">
+                    <button class="btn-demo" data-role="admin">👑 Admin</button>
+                    <button class="btn-demo" data-role="taller">🔧 Taller</button>
+                    <button class="btn-demo" data-role="cliente">👤 Cliente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== APP SHELL ====== -->
+    <div class="app-shell hidden" id="appShell">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <rect x="2" y="2" width="36" height="36" rx="8" stroke="currentColor" stroke-width="2.5"/>
+                        <path d="M12 28V18L20 12L28 18V28" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="20" cy="22" r="3" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span>TallerCitas</span>
+                </div>
+                <button class="btn-menu" id="btnMenuToggle">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-view="calendario" id="navCalendario">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span>Calendario</span>
+                </a>
+                <a href="#" class="nav-item admin-only" data-view="talleres" id="navTalleres">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M3 7v1a3 3 0 006 0V7m0 0v1a3 3 0 006 0V7m0 0v1a3 3 0 006 0V7M5 21V10.9M19 21V10.9"/></svg>
+                    <span>Talleres</span>
+                </a>
+                <a href="#" class="nav-item admin-only" data-view="usuarios" id="navUsuarios">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                    <span>Usuarios</span>
+                </a>
+                <a href="#" class="nav-item" data-view="reportes" id="navReportes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    <span>Reportes</span>
+                </a>
+            </nav>
+
+            <!-- Taller Selector -->
+            <div class="sidebar-taller-select" id="tallerSelectContainer">
+                <label>Taller activo</label>
+                <select id="activeTallerSelect">
+                    <option value="">Todos los talleres</option>
+                </select>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-info" id="userInfo">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Admin</div>
+                        <div class="user-role" id="userRole">Administrador</div>
+                    </div>
+                </div>
+                <button class="btn-logout" id="btnLogout" title="Cerrar sesión">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Mobile Header -->
+        <div class="mobile-header" id="mobileHeader">
+            <button class="btn-menu" id="btnMobileMenu">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <span class="mobile-title">TallerCitas</span>
+            <button class="btn-menu" id="btnMobileAdd">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+
+            <!-- ===== VIEW: CALENDARIO ===== -->
+            <div class="view active" id="viewCalendario">
+                <div class="view-header">
+                    <div class="view-title-group">
+                        <h2>Calendario de Citas</h2>
+                        <p class="view-subtitle" id="calendarSubtitle">Abril 2026</p>
+                    </div>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" id="btnNewCita">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Nueva Cita
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Calendar Navigation -->
+                <div class="calendar-nav">
+                    <button class="btn btn-ghost btn-icon-only" id="btnPrevMonth" title="Mes anterior">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <h3 class="calendar-month-title" id="calendarMonthTitle">Abril 2026</h3>
+                    <button class="btn btn-ghost btn-icon-only" id="btnNextMonth" title="Mes siguiente">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <button class="btn btn-ghost" id="btnToday">Hoy</button>
+                </div>
+
+                <!-- Stats Bar -->
+                <div class="stats-bar" id="calendarStats">
+                    <div class="stat-card">
+                        <div class="stat-icon pending">📋</div>
+                        <div class="stat-data">
+                            <span class="stat-num" id="statPendientes">0</span>
+                            <span class="stat-lbl">Pendientes</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon confirmed">✅</div>
+                        <div class="stat-data">
+                            <span class="stat-num" id="statConfirmadas">0</span>
+                            <span class="stat-lbl">Confirmadas</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon done">🔧</div>
+                        <div class="stat-data">
+                            <span class="stat-num" id="statRealizadas">0</span>
+                            <span class="stat-lbl">Realizadas</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon noshow">❌</div>
+                        <div class="stat-data">
+                            <span class="stat-num" id="statNoAsistio">0</span>
+                            <span class="stat-lbl">No asistió</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div class="calendar-grid">
+                    <div class="cal-header">
+                        <div class="cal-header-day">Lun</div>
+                        <div class="cal-header-day">Mar</div>
+                        <div class="cal-header-day">Mié</div>
+                        <div class="cal-header-day">Jue</div>
+                        <div class="cal-header-day">Vie</div>
+                        <div class="cal-header-day weekend">Sáb</div>
+                        <div class="cal-header-day weekend">Dom</div>
+                    </div>
+                    <div class="cal-body" id="calendarBody">
+                        <!-- Generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Day Detail Panel -->
+                <div class="day-panel hidden" id="dayPanel">
+                    <div class="day-panel-header">
+                        <div>
+                            <h3 id="dayPanelTitle">15 de Abril, 2026</h3>
+                            <p id="dayPanelCount">3 citas programadas</p>
+                        </div>
+                        <div class="day-panel-actions">
+                            <button class="btn btn-primary btn-sm" id="btnAddCitaDay">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Agregar
+                            </button>
+                            <button class="btn btn-ghost btn-sm" id="btnCloseDayPanel">✕</button>
+                        </div>
+                    </div>
+                    <div class="day-panel-body" id="dayPanelBody">
+                        <!-- Cita cards rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== VIEW: TALLERES ===== -->
+            <div class="view" id="viewTalleres">
+                <div class="view-header">
+                    <div class="view-title-group">
+                        <h2>Gestión de Talleres</h2>
+                        <p class="view-subtitle">Administra tus talleres mecánicos</p>
+                    </div>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" id="btnNewTaller">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Nuevo Taller
+                        </button>
+                    </div>
+                </div>
+                <div class="cards-grid" id="talleresGrid">
+                    <!-- Taller cards rendered by JS -->
+                </div>
+                <div class="empty-state hidden" id="emptyTalleres">
+                    <div class="empty-icon">🏭</div>
+                    <h3>Sin talleres registrados</h3>
+                    <p>Crea tu primer taller para comenzar a agendar citas.</p>
+                </div>
+            </div>
+
+            <!-- ===== VIEW: USUARIOS ===== -->
+            <div class="view" id="viewUsuarios">
+                <div class="view-header">
+                    <div class="view-title-group">
+                        <h2>Gestión de Usuarios</h2>
+                        <p class="view-subtitle">Administra personas y permisos de acceso</p>
+                    </div>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" id="btnNewUsuario">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Nuevo Usuario
+                        </button>
+                    </div>
+                </div>
+                <div class="users-table-container" id="usuariosTableContainer">
+                    <table class="data-table" id="usuariosTable">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Correo</th>
+                                <th>Rol</th>
+                                <th>Talleres Asignados</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usuariosBody">
+                            <!-- Rows by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty-state hidden" id="emptyUsuarios">
+                    <div class="empty-icon">👥</div>
+                    <h3>Sin usuarios registrados</h3>
+                    <p>Agrega usuarios y asígnales roles y talleres.</p>
+                </div>
+            </div>
+
+            <!-- ===== VIEW: REPORTES ===== -->
+            <div class="view" id="viewReportes">
+                <div class="view-header">
+                    <div class="view-title-group">
+                        <h2>Reportes Mensuales</h2>
+                        <p class="view-subtitle" id="reportSubtitle">Análisis del mes actual</p>
+                    </div>
+                    <div class="view-actions">
+                        <div class="report-filters">
+                            <select id="reportMonth" class="input-sm"></select>
+                            <select id="reportTaller" class="input-sm">
+                                <option value="">Todos los talleres</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" id="btnDownloadReport">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Descargar CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="kpi-grid" id="reportKPIs">
+                    <div class="kpi-card">
+                        <div class="kpi-value" id="kpiTotal">0</div>
+                        <div class="kpi-label">Total Citas</div>
+                        <div class="kpi-bar"><div class="kpi-fill" style="width:100%"></div></div>
+                    </div>
+                    <div class="kpi-card kpi-confirmed">
+                        <div class="kpi-value" id="kpiConfirmadas">0</div>
+                        <div class="kpi-label">Confirmadas</div>
+                        <div class="kpi-bar"><div class="kpi-fill" id="kpiBarConfirmadas"></div></div>
+                    </div>
+                    <div class="kpi-card kpi-done">
+                        <div class="kpi-value" id="kpiRealizadas">0</div>
+                        <div class="kpi-label">Realizadas</div>
+                        <div class="kpi-bar"><div class="kpi-fill" id="kpiBarRealizadas"></div></div>
+                    </div>
+                    <div class="kpi-card kpi-noshow">
+                        <div class="kpi-value" id="kpiNoAsistio">0</div>
+                        <div class="kpi-label">No Asistieron</div>
+                        <div class="kpi-bar"><div class="kpi-fill" id="kpiBarNoAsistio"></div></div>
+                    </div>
+                    <div class="kpi-card kpi-rescheduled">
+                        <div class="kpi-value" id="kpiReprogramadas">0</div>
+                        <div class="kpi-label">Reprogramadas</div>
+                        <div class="kpi-bar"><div class="kpi-fill" id="kpiBarReprogramadas"></div></div>
+                    </div>
+                    <div class="kpi-card kpi-rate">
+                        <div class="kpi-value" id="kpiTasa">0%</div>
+                        <div class="kpi-label">Tasa Cumplimiento</div>
+                        <div class="kpi-bar"><div class="kpi-fill" id="kpiBarTasa"></div></div>
+                    </div>
+                </div>
+
+                <!-- Daily Chart -->
+                <div class="report-section">
+                    <h3>Citas por Día del Mes</h3>
+                    <div class="chart-container" id="dailyChart">
+                        <!-- CSS bar chart rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Busiest Days -->
+                <div class="report-section">
+                    <h3>Días Más Ocupados</h3>
+                    <div class="top-days-list" id="topDaysList">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Detailed Table -->
+                <div class="report-section">
+                    <h3>Detalle de Citas del Mes</h3>
+                    <div class="table-scroll">
+                        <table class="data-table" id="reportTable">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Económico</th>
+                                    <th>Vehículo</th>
+                                    <th>Servicio</th>
+                                    <th>Solicitante</th>
+                                    <th>Taller</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ====== OVERLAY for mobile sidebar ====== -->
+    <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
+
+    <!-- ====== MODAL: NUEVA/EDITAR CITA ====== -->
+    <div class="modal-overlay" id="modalCitaOverlay">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 id="modalCitaTitle">Nueva Cita</h2>
+                <button class="btn-close" id="btnCloseCita">&times;</button>
+            </div>
+            <form id="formCita" class="modal-form">
+                <input type="hidden" id="citaId" value="">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="citaTaller">Taller *</label>
+                        <select id="citaTaller" required>
+                            <option value="">Seleccionar taller...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="citaFecha">Fecha de cita *</label>
+                        <input type="date" id="citaFecha" required>
+                    </div>
+                </div>
+
+                <hr class="form-divider">
+                <h3 class="form-section-title">Datos del Vehículo</h3>
+
+                <div class="form-row three-col">
+                    <div class="form-group">
+                        <label for="citaEconomico">No. Económico *</label>
+                        <input type="text" id="citaEconomico" placeholder="Ej: ECO-1452" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="citaTipoVehiculo">Tipo de Vehículo *</label>
+                        <select id="citaTipoVehiculo" required>
+                            <option value="">Seleccionar...</option>
+                            <option>Tractocamión</option>
+                            <option>Remolque</option>
+                            <option>Camioneta</option>
+                            <option>Camión</option>
+                            <option>Automóvil</option>
+                            <option>Dolly</option>
+                            <option>Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="citaPlacas">Placas</label>
+                        <input type="text" id="citaPlacas" placeholder="Ej: ABC-123">
+                    </div>
+                </div>
+
+                <hr class="form-divider">
+                <h3 class="form-section-title">Información del Servicio</h3>
+
+                <div class="form-row">
+                    <div class="form-group full">
+                        <label for="citaServicio">Servicio a realizar *</label>
+                        <input type="text" id="citaServicio" placeholder="Ej: Mantenimiento preventivo, cambio de frenos..." required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="citaSolicitante">Solicitante (persona que agenda) *</label>
+                        <input type="text" id="citaSolicitante" placeholder="Nombre completo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="citaTelefono">Teléfono del solicitante</label>
+                        <input type="text" id="citaTelefono" placeholder="81 1234 5678">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="citaGeneradaPor">Cita generada por</label>
+                        <input type="text" id="citaGeneradaPor" placeholder="Nombre de quien registra" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="citaNotas">Notas adicionales</label>
+                        <textarea id="citaNotas" rows="2" placeholder="Observaciones..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-ghost" id="btnCancelCita">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: TALLER ====== -->
+    <div class="modal-overlay" id="modalTallerOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTallerTitle">Nuevo Taller</h2>
+                <button class="btn-close" id="btnCloseTaller">&times;</button>
+            </div>
+            <form id="formTaller" class="modal-form">
+                <input type="hidden" id="tallerId" value="">
+                <div class="form-group">
+                    <label for="tallerNombre">Nombre del taller *</label>
+                    <input type="text" id="tallerNombre" placeholder="Ej: Taller MTY Centro" required>
+                </div>
+                <div class="form-group">
+                    <label for="tallerDireccion">Dirección</label>
+                    <input type="text" id="tallerDireccion" placeholder="Calle, colonia, ciudad">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tallerTelefono">Teléfono</label>
+                        <input type="text" id="tallerTelefono" placeholder="81 1234 5678">
+                    </div>
+                    <div class="form-group">
+                        <label for="tallerCapacidad">Capacidad diaria</label>
+                        <input type="number" id="tallerCapacidad" placeholder="Ej: 10" min="1">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-ghost" id="btnCancelTaller">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Taller</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: USUARIO ====== -->
+    <div class="modal-overlay" id="modalUsuarioOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalUsuarioTitle">Nuevo Usuario</h2>
+                <button class="btn-close" id="btnCloseUsuario">&times;</button>
+            </div>
+            <form id="formUsuario" class="modal-form">
+                <input type="hidden" id="usuarioId" value="">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="usuarioNombre">Nombre completo *</label>
+                        <input type="text" id="usuarioNombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="usuarioEmail">Correo electrónico *</label>
+                        <input type="email" id="usuarioEmail" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="usuarioRol">Rol *</label>
+                        <select id="usuarioRol" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="admin">Administrador</option>
+                            <option value="taller">Encargado de Taller</option>
+                            <option value="cliente">Cliente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="usuarioPassword">Contraseña</label>
+                        <input type="password" id="usuarioPassword" placeholder="Mínimo 6 caracteres" minlength="6">
+                    </div>
+                </div>
+                <div class="form-group" id="tallerAssignGroup">
+                    <label>Talleres asignados</label>
+                    <div class="checkbox-grid" id="tallerCheckboxes">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-ghost" id="btnCancelUsuario">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: CONFIRM ACTION ====== -->
+    <div class="modal-overlay" id="modalConfirmOverlay">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2 id="confirmTitle">Confirmar</h2>
+                <button class="btn-close" id="btnCloseConfirm">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-icon" id="confirmIcon">⚠️</div>
+                <p class="confirm-text" id="confirmText">¿Estás seguro?</p>
+                <p class="confirm-detail" id="confirmDetail"></p>
+
+                <!-- Reschedule date (only visible when rescheduling) -->
+                <div class="form-group hidden" id="rescheduleGroup">
+                    <label for="rescheduleDate">Nueva fecha</label>
+                    <input type="date" id="rescheduleDate">
+                </div>
+
+                <div class="confirm-actions">
+                    <button type="button" class="btn btn-ghost" id="btnConfirmCancel">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmOk">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== TOAST ====== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ====== SCRIPTS ====== -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
