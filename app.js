@@ -23,17 +23,40 @@
 
     // ========== DATA LAYER ==========
     function initFirebase() {
-        if (typeof USE_FIREBASE !== 'undefined' && USE_FIREBASE && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
-            try {
-                firebase.initializeApp(FIREBASE_CONFIG);
-                db = firebase.firestore();
-                auth = firebase.auth();
-                useFirebase = true;
-                const banner = $('#firebaseBanner');
-                if (banner) banner.style.display = 'none';
-            } catch (e) { console.warn('Firebase init failed, using localStorage', e); }
+        if (typeof USE_FIREBASE === 'undefined' || !USE_FIREBASE) {
+            return; // localStorage mode, banner stays visible
+        }
+        if (!FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
+            updateBanner('⚠️ firebase-config.js no tiene las credenciales completas.');
+            return;
+        }
+        try {
+            if (typeof firebase === 'undefined') {
+                updateBanner('⚠️ No se pudo cargar el SDK de Firebase. Verifica tu conexión a internet.');
+                return;
+            }
+            firebase.initializeApp(FIREBASE_CONFIG);
+            db = firebase.firestore();
+            auth = firebase.auth();
+            useFirebase = true;
+            const banner = $('#firebaseBanner');
+            if (banner) banner.style.display = 'none';
+        } catch (e) {
+            updateBanner('⚠️ Error Firebase: ' + e.message);
+            console.error('Firebase init error:', e);
         }
     }
+
+    function updateBanner(msg) {
+        const banner = $('#firebaseBanner');
+        if (banner) {
+            banner.querySelector('span').textContent = msg;
+            banner.style.background = 'rgba(248,113,113,0.15)';
+            banner.style.borderColor = 'rgba(248,113,113,0.3)';
+            banner.style.color = '#f87171';
+        }
+    }
+
 
     function loadLocal(key) { try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; } }
     function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
@@ -914,4 +937,41 @@
         // Reports
         $('#reportMonth').addEventListener('change', renderReportes);
         $('#reportTaller').addEventListener('change', renderReportes);
-        $('#
+        $('#btnDownloadReport').addEventListener('click', downloadReportCSV);
+
+        // Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                ['#modalCitaOverlay', '#modalTallerOverlay', '#modalUsuarioOverlay', '#modalConfirmOverlay'].forEach(id => closeModal(id));
+            }
+        });
+    }
+
+    // ========== INIT ==========
+    async function init() {
+        initFirebase();
+        await loadAllData();
+        seedDemoData();
+        // Reload after seed
+        if (!useFirebase) loadFromLocal();
+
+        const now = new Date();
+        calYear = now.getFullYear();
+        calMonth = now.getMonth();
+
+        bindEvents();
+
+        // Auto-login from session
+        const session = getSession();
+        if (session) {
+            currentUser = session;
+            // Verify user still exists
+            const u = usuarios.find(x => x.id === session.id);
+            if (u) { currentUser = u; setSession(u); enterApp(); return; }
+        }
+        // Show login
+        $('#loginScreen').classList.remove('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+})();
