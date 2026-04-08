@@ -696,14 +696,29 @@
                 <td><span class="role-badge role-${u.rol}">${roleLabels[u.rol] || u.rol}</span></td>
                 <td>${assignedNames.length > 0 ? assignedNames.map(n => `<span class="staff-chip">${esc(n)}</span>`).join(' ') : '<span style="color:var(--text-muted)">—</span>'}</td>
                 <td><div style="display:flex;gap:0.3rem">
-                    <button class="btn-action edit" data-id="${u.id}" data-entity="usuario">✎</button>
-                    <button class="btn-action delete" data-id="${u.id}" data-entity="usuario">🗑</button>
+                    <button class="btn-action edit" data-id="${u.id}" data-entity="usuario" title="Editar">✎</button>
+                    <button class="btn-action" data-id="${u.id}" data-email="${u.email}" data-entity="reset" title="Enviar reset de contraseña" style="font-size:0.75rem">🔑</button>
+                    <button class="btn-action delete" data-id="${u.id}" data-entity="usuario" title="Eliminar">🗑</button>
                 </div></td>
             </tr>`;
         }).join('');
 
         body.querySelectorAll('.btn-action.edit[data-entity="usuario"]').forEach(btn => {
             btn.addEventListener('click', () => openUsuarioModal(usuarios.find(u => u.id === btn.dataset.id)));
+        });
+        body.querySelectorAll('[data-entity="reset"]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const email = btn.dataset.email;
+                if (!email) return;
+                if (useFirebase && auth) {
+                    try {
+                        await auth.sendPasswordResetEmail(email);
+                        showToast(`✅ Correo de reset enviado a ${email}`);
+                    } catch (e) { showToast('Error: ' + e.message); }
+                } else {
+                    showToast('Función disponible solo con Firebase activo');
+                }
+            });
         });
         body.querySelectorAll('.btn-action.delete[data-entity="usuario"]').forEach(btn => {
             btn.addEventListener('click', () => {
