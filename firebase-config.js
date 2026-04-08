@@ -1,6 +1,4 @@
 // Firebase Configuration — citas-talleres
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyAJgQngCuhPT9m6S0NnQryjYGU5ImsqlHo",
     authDomain: "citas-talleres.firebaseapp.com",
@@ -11,5 +9,4 @@ const FIREBASE_CONFIG = {
     measurementId: "G-CLMCQQMPJ3"
 };
 
-// ⚡ Firebase habilitado
 const USE_FIREBASE = true;
