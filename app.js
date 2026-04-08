@@ -185,8 +185,27 @@
         if (useFirebase) {
             try {
                 const cred = await auth.createUserWithEmailAndPassword(email, password);
-                const u = { id: cred.user.uid, nombre: name, email, rol: 'cliente', password: '', talleresAsignados: [], creadoEn: new Date().toISOString() };
-                await saveUsuario(u);
+                // Check if admin already created a profile for this email
+                const snap = await db.collection('usuarios').where('email', '==', email).limit(1).get();
+                let u;
+                if (!snap.empty) {
+                    // Profile exists — update it with the Firebase Auth UID and keep role
+                    u = { id: snap.docs[0].id, ...snap.docs[0].data() };
+                    u.id = cred.user.uid;
+                    if (!u.nombre || u.nombre === '') u.nombre = name;
+                    await db.collection('usuarios').doc(cred.user.uid).set(u);
+                    // Remove old doc if id was different
+                    if (snap.docs[0].id !== cred.user.uid) {
+                        await db.collection('usuarios').doc(snap.docs[0].id).delete();
+                    }
+                } else {
+                    // No pre-created profile — new user, defaults to cliente
+                    u = { id: cred.user.uid, nombre: name, email, rol: 'cliente', talleresAsignados: [], creadoEn: new Date().toISOString() };
+                    await db.collection('usuarios').doc(u.id).set(u);
+                }
+                const idx = usuarios.findIndex(x => x.email === email);
+                if (idx >= 0) usuarios[idx] = u; else usuarios.push(u);
+                saveLocal(KEYS.usuarios, usuarios);
                 setSession(u);
                 return true;
             } catch (e) { showToast('Error: ' + e.message); return false; }
@@ -895,41 +914,4 @@
         // Reports
         $('#reportMonth').addEventListener('change', renderReportes);
         $('#reportTaller').addEventListener('change', renderReportes);
-        $('#btnDownloadReport').addEventListener('click', downloadReportCSV);
-
-        // Escape
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                ['#modalCitaOverlay', '#modalTallerOverlay', '#modalUsuarioOverlay', '#modalConfirmOverlay'].forEach(id => closeModal(id));
-            }
-        });
-    }
-
-    // ========== INIT ==========
-    async function init() {
-        initFirebase();
-        await loadAllData();
-        seedDemoData();
-        // Reload after seed
-        if (!useFirebase) loadFromLocal();
-
-        const now = new Date();
-        calYear = now.getFullYear();
-        calMonth = now.getMonth();
-
-        bindEvents();
-
-        // Auto-login from session
-        const session = getSession();
-        if (session) {
-            currentUser = session;
-            // Verify user still exists
-            const u = usuarios.find(x => x.id === session.id);
-            if (u) { currentUser = u; setSession(u); enterApp(); return; }
-        }
-        // Show login
-        $('#loginScreen').classList.remove('hidden');
-    }
-
-    document.addEventListener('DOMContentLoaded', init);
-})();
+        $('#
